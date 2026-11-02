@@ -18,7 +18,6 @@ from pathlib import Path
 
 # Level A: conclusion-weakening / vague qualifiers — rewrite by default when numbers or clear evidence exist
 A_LEVEL = [
-    # NOTE: Chinese hedge lexicon kept verbatim (functional data; matched against document text)
     # HREL epistemic modality (selection from the aproko lexicon)
     "可能", "或许", "也许", "似乎", "看起来", "恐怕", "有可能", "未必",
     "不好说", "说不清", "据估计", "据说", "据传",

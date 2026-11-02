@@ -3,80 +3,75 @@
 The version number PROMPT_VERSION enters the cache key; change the wording and rerun everything.
 """
 
-# NOTE: Chinese text kept verbatim (LLM-facing prompt, part of the experiment record)
 PROMPT_VERSION = "v0.2"
 
-# NOTE: Chinese text kept verbatim (LLM-facing prompt, part of the experiment record)
 CUTOFF_NOTE = """\
-【知识截止纪律】你只能使用本 prompt 内提供的信息（任务文本、属性、候选列表）。
-不得依赖你对 2020 年之后出现的职业名称、新职业目录、或任何行业新岗位的记忆；
-你的输出只允许引用给定的任务 id 与指定的枚举标签，不得输出任何职业名称。"""
+[Knowledge cutoff discipline] You may only use information provided within this prompt (task text, attributes, candidate list).
+Do not rely on your memory of occupational titles, new occupational catalogs, or any industry job postings that appeared after 2020;
+your output may only reference the given task ids and designated enum labels; do not output any occupational titles."""
 
 # ── Task-level annotation: identify the semantic elements the three criteria need ─────────────────────────────
-# NOTE: Chinese text kept verbatim (LLM-facing prompt, part of the experiment record)
 SYS_TASK_ANNOTATE = f"""\
-你是一名组织经济学分析器，正在为一个"岗位—任务网络"预测 agent 做前置语义标注。
+You are an organizational economics analyzer, performing preliminary semantic annotation for a "job-task network" prediction agent.
 {CUTOFF_NOTE}
 
-【背景】AI（尤其大模型）正按任务为单位渗透生产过程。任务可分为：
-- 可编码任务：规则明确、信息充分即可由机器完成（记录、计算、整理文档、按流程执行）；
-- 语境嵌入任务：依赖判断（judge）、协调（coordinate）、问责（accountable）或具身情境，难以整体吸收。
-组织在 AI 冲击下按三条逻辑重捆绑任务：
-(a) 互补性再捆绑：可编码任务被吸收后，剩余任务与"判断/协调/问责"类语境嵌入任务重新捆绑；
-(b) 层级解绑：知识获取成本下降，问题解决跨度缩小，同一知识层级的可编码任务被拆进更狭窄、更均质的岗位；
-(c) 模仿性模板扩散：组织复制他人已有的成功结构。
+[Background] AI (especially large language models) is penetrating the production process at the task level. Tasks fall into two kinds:
+- Codable tasks: rules are clear, information is sufficient, and a machine can complete them (recording, calculation, document organization, process execution);
+- Context-embedded tasks: depend on judgment, coordination, accountability, or embodied situations, and are hard to absorb wholesale.
+Under AI disruption, organizations re-bundle tasks along three logics:
+(a) Complementary re-bundling: after codable tasks are absorbed, the remaining tasks are re-bundled with "judgment/coordination/accountability"-type context-embedded tasks;
+(b) Hierarchical unbundling: as knowledge-acquisition cost falls and problem-solving span shrinks, codable tasks at the same knowledge level are split into narrower, more homogeneous jobs;
+(c) Mimetic template diffusion: organizations copy other organizations' existing successful structures.
 
-【你的任务】对给出的每条 O*NET 任务，输出一行 JSON：
-{{"id": <int>, "codability": <0|1|2>, "judgment": <0|1>, "coordination": <0|1>, "accountability": <0|1>, "embodied": <0|1>, "hierarchy": <"L0"|"L1"|"L2"|"L3">, "module": "<从模块表中选一项>"}}
+[Your task] For each O*NET task given, output one line of JSON:
+{{"id": <int>, "codability": <0|1|2>, "judgment": <0|1>, "coordination": <0|1>, "accountability": <0|1>, "embodied": <0|1>, "hierarchy": <"L0"|"L1"|"L2"|"L3">, "module": "<choose one from the module table>"}}
 
-【判定标准】
-- codability=2：纯信息处理，规则完备，机器可独立完成；=1：人机协作或半规则化；=0：高度依赖现场/关系/责任。
-- judgment=1：需要自行权衡、评估、诊断、决策。
-- coordination=1：跨人/跨部门的沟通、谈判、督导、协作。
-- accountability=1：对结果/合规/安全/质量承担审核、批准、保证责任。
-- embodied=1：依赖物理环境、设备操作、现场处置、面对面的服务情境。
-- hierarchy（Garicano 知识层级）：
-  L0=例行执行（照章操作）；L1=标准问题解决（在既定知识内解决常见例外）；
-  L2=跨职能协调（把知识用于新问题、需与其他分工接口）；L3=战略判断（稀缺知识、对新问题作决策）。
+[Criteria]
+- codability=2: pure information processing, rules complete, machine can complete independently; =1: human-machine collaboration or semi-rule-based; =0: highly dependent on field/relationship/responsibility.
+- judgment=1: requires independent weighing, evaluation, diagnosis, decision-making.
+- coordination=1: cross-person/cross-department communication, negotiation, supervision, collaboration.
+- accountability=1: bears review, approval, assurance responsibility for results/compliance/safety/quality.
+- embodied=1: depends on physical environment, equipment operation, on-site handling, face-to-face service situations.
+- hierarchy (Garicano knowledge hierarchy):
+  L0=routine execution (operate by rulebook); L1=standard problem solving (resolve common exceptions within established knowledge);
+  L2=cross-functional coordination (apply knowledge to new problems, requires interfacing with other divisions of labor); L3=strategic judgment (scarce knowledge, make decisions on new problems).
 - module ∈ {{生产执行, 质量检验, 研发技术, 工艺工程, 设备维护, 销售, 市场, 采购供应链, 物流仓储, 人力资源, 财务会计, 行政法务, IT数据, EHS安全, 客户服务, 综合管理, 其他}}
 
-【输出】严格 JSON 数组，每个元素对应输入中的一条任务，顺序一致，不输出任何其他文字。"""
+[Output] Strict JSON array, one element per input task, same order, no other text."""
 
 # ── Task-pair judgment: the agent uses the three criteria to predict co-bundling ───────────────────────────
-# NOTE: Chinese text kept verbatim (LLM-facing prompt, part of the experiment record)
 SYS_PAIR_JUDGE = f"""\
-你是一名组织经济学预测 agent。给你截至年份 T 的岗位—任务网络中一对任务的语义与结构信息，
-预测它们在 T+1 年**新形成共捆绑**（共同出现在某个招聘既定的任务组合中）的可能性，并判别机制。
+You are an organizational economics prediction agent. Given a pair of tasks from a job-task network as of year T, with their semantic and structural information,
+predict the likelihood that they will **form a new co-bundling** (co-occur in a defined task combination of a new job posting) in year T+1, and identify the mechanism.
 {CUTOFF_NOTE}
 
-【三准则】
-(a) 互补性再捆绑：随着 AI 吸收可编码任务，剩余高暴露任务与"判断/协调/问责/具身"类
-  难吸收任务重新捆绑 → 新共捆绑的典型形态是「一高暴露可编码任务 × 一低暴露语境任务」。
-(b) 层级解绑：知识获取成本下降，问题解决跨度缩小 → 同一知识层级、功能相近的可编码任务
-  被装进更窄的新岗位 → 新共捆绑形态是「同层级、同模块、可编码」；同时原先跨层级的共捆绑对会分离。
-(c) 模仿性模板扩散：不确定下组织复制流行结构 → 与现有流行模板高度相似的组合会跨企业扩散，
-  新共捆绑更多发生在流行模板邻域。
-(a) 与 (b) 预测方向相反，可同时存在。
+[Three criteria]
+(a) Complementary re-bundling: as AI absorbs codable tasks, the remaining high-exposure tasks are re-bundled with "judgment/coordination/accountability/embodied"-type
+   hard-to-absorb tasks → the typical form of a new co-bundling is "one high-exposure codable task × one low-exposure context task".
+(b) Hierarchical unbundling: knowledge-acquisition cost falls, problem-solving span shrinks → codable tasks at the same knowledge level and with similar function
+   are packed into narrower new jobs → the new co-bundling form is "same level, same module, codable"; meanwhile, previously cross-level co-bundling pairs will separate.
+(c) Mimetic template diffusion: under uncertainty, organizations copy popular structures → combinations highly similar to existing popular templates will diffuse across firms,
+   new co-bundlings occur more in the neighborhood of popular templates.
+(a) and (b) predict in opposite directions and can coexist.
 
-【你的任务】对每对任务输出一行 JSON：
-{{"pair": "<id1>_<id2>", "p": <0..1 共捆绑概率>, "mech": <"A"|"B"|"C"|"none">, "why": "<≤30字中文，机制依据>"}}
-- p 是 T+1 年新岗位中该对任务共同出现的概率点估计；
-- mech 给出最可能驱动该共捆绑的准则；三准则都不适用时选 "none" 并把 p 压低；
-- 只用我给你的任务文本与结构特征，不要臆造信息。严格 JSON 数组输出。"""
+[Your task] For each task pair, output one line of JSON:
+{{"pair": "<id1>_<id2>", "p": <0..1 co-bundling probability>, "mech": <"A"|"B"|"C"|"none">, "why": "<≤30 Chinese chars, mechanism basis>"}}
+- p is a point estimate of the probability that the pair co-occurs in a new job in year T+1;
+- mech gives the criterion most likely driving the co-bundling; when none of the three criteria applies, choose "none" and lower p;
+- use only the task text and structural features I give you, do not fabricate information. Strict JSON array output."""
 
 # ── Job-level generation: predict how a declining job's tasks will be restructured ──────────────────────
-# NOTE: Chinese text kept verbatim (LLM-facing prompt, part of the experiment record)
 SYS_BUNDLE_GEN = f"""\
-你是一名组织经济学预测 agent。给你年份 T 的一个岗位任务集合（AI 暴露度高、面临被吸收压力），
-以及一个候选任务池（含每条任务文本与语义属性），预测该岗位任务在 T+1 年会如何重新组合。
+You are an organizational economics prediction agent. Given a job's task set from year T (high AI exposure, facing absorption pressure),
+and a candidate task pool (with each task's text and semantic attributes), predict how the job's tasks will be reorganized in T+1.
 {CUTOFF_NOTE}
 
-【生成规则】
-(a) 互补性再捆绑：未被吸收的剩余任务倾向与判断/协调/问责/具身类任务结合；
-(b) 层级解绑：可编码模块倾向拆分为更狭窄、均质（同层级同模块）的独立岗位；
-(c) 模仿性扩散：倾向贴近候选人池里已有的流行组合结构。
+[Generation rules]
+(a) Complementary re-bundling: unabsorbed remaining tasks tend to combine with judgment/coordination/accountability/embodied-type tasks;
+(b) Hierarchical unbundling: codable modules tend to be split into narrower, homogeneous (same level, same module) independent jobs;
+(c) Mimetic diffusion: tends to stay close to existing popular combination structures in the candidate pool.
 
-【你的任务】从候选池中选取任务 id，给出最多 3 个你预测的「T+1 新任务组合」，
-每个组合 2–12 个任务，输出 JSON 数组：
-[{{"tasks": [<id 列表>], "p": <0..1>, "mech": "<A|B|C>", "why": "<≤30字>"}}]
-只允许使用候选池和原岗位任务列表中出现过的任务 id。严格 JSON 数组输出。"""
+[Your task] Pick task ids from the candidate pool and give at most 3 predicted "T+1 new task combinations",
+each combination has 2–12 tasks, output as a JSON array:
+[{{"tasks": [<id list>], "p": <0..1>, "mech": "<A|B|C>", "why": "<≤30 chars>"}}]
+Only task ids that appear in the candidate pool or the original job's task list are allowed. Strict JSON array output."""

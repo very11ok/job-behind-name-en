@@ -52,7 +52,6 @@ def score_JAC(df: pd.DataFrame) -> pd.Series:
     return df["jaccard"]
 
 
-# NOTE: Chinese data schema kept verbatim (dict keys become DataFrame column names / output values)
 RULE_SCORES = {"A_互补再捆绑": score_A, "B_层级解绑": score_B}
 BASELINE_SCORES = {"持续性": score_PERSIST, "优先连接": score_PA,
                    "共邻": score_CN, "jaccard": score_JAC}

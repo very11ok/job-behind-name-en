@@ -76,7 +76,6 @@ def main(year: int = 2019, mode: str = "llm"):
         m["attr"] = mode
         rows.append(m)
     # baselines
-    # NOTE: Chinese names kept verbatim (baseline method labels written to the results CSV, must not change)
     for name, col in [("共邻", "cn"), ("优先连接", "pa"), ("jaccard", "jaccard"),
                       ("持续性", "bind_TM1")]:
         m = evaluate.rank_metrics(y, d[col].to_numpy(), name)

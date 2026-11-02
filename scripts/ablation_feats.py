@@ -42,7 +42,6 @@ def run(year: int = 2019, mode: str = "llm"):
         te = te[(m_te["ctx_llm_i"].notna() & m_te["ctx_llm_j"].notna()).to_numpy()]
     trp, tep = model._prep(tr), model._prep(te)
     y = tep["y"].to_numpy()
-    # NOTE: Chinese values kept verbatim (`feats` row labels written to ablation_feats_*.csv; functional data)
     rows = [{"feats": "纯图基线", **model._metrics(y, _fit(trp, tep, model.BASE_FEATS))}]
     for f in model.RULE_FEATS:
         rows.append({"feats": f"+ {f}", **model._metrics(y, _fit(trp, tep, model.BASE_FEATS + [f]))})

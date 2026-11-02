@@ -60,7 +60,6 @@ def main(year: int = 2019, mode: str = "merge", covered_only: bool = False):
     df_llm = _score(df_llm)
     names = list(rules.RULE_SCORES) + list(rules.BASELINE_SCORES)
     res_llm = evaluate.eval_frame(df_llm, names, target="y")
-    # NOTE: Chinese data values kept verbatim (attr column written to agent_metrics_{year}.csv)
     res_llm["attr"] = {"llm": "LLM三守则", "merge": "llm+lex合并", "lex": "lex"}[mode] + \
                       ("(覆盖子图)" if covered_only else "")
 
@@ -70,7 +69,6 @@ def main(year: int = 2019, mode: str = "merge", covered_only: bool = False):
         df_lex = df_lex[mask].copy()
     df_lex = _score(df_lex)
     res_lex = evaluate.eval_frame(df_lex, names, target="y")
-    # NOTE: Chinese data value kept verbatim (attr column written to agent_metrics_{year}.csv)
     res_lex["attr"] = "lex消融"
 
     res = pd.concat([res_llm, res_lex])
@@ -91,7 +89,6 @@ def main(year: int = 2019, mode: str = "merge", covered_only: bool = False):
 
         rows = []
         tr_l, te_l = _frames("lex")
-        # NOTE: Chinese data values kept verbatim (model labels written to clash_{year}.csv)
         rows.append(model.clash_one(tr_l, te_l, False, "纯图+持续"))
         if covered_only:
             tr_i, te_i = _frames("llm")
@@ -106,7 +103,6 @@ def main(year: int = 2019, mode: str = "merge", covered_only: bool = False):
         print("clash failed:", repr(e))
 
     # 4) high-score samples (for LLM mechanism discrimination and why output)
-    # NOTE: Chinese column names kept verbatim (score columns defined in rules.RULE_SCORES / BASELINE_SCORES)
     samp = pd.concat([
         df_llm.nlargest(300, "A_互补再捆绑").assign(tag="topA"),
         df_llm.nlargest(300, "B_层级解绑").assign(tag="topB"),

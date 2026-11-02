@@ -1,9 +1,7 @@
-# NOTE: The JSON output-format examples in the docstring below are kept verbatim in Chinese
-# (they record the literal LLM protocol defined in SYS_G1/SYS_G2/SYS_G3, part of the experiment record).
 """Let the LLM judge the antecedent + probability bin for each object. Three prompts correspond to the three criteria.
 
 Output JSON, one line per object:
-  g1: {"job": "...", "prior": <0|1>, "p": <0..1>, "level": <"低"|"中"|"高">, "why": "..."}
+  g1: {"job": "...", "prior": <0|1>, "p": <0..1>, "level": <"low"|"mid"|"high">, "why": "..."}
   g2: {"seed": <int>, "prior": ..., "p": ..., "level": ..., "why": ...}
   g3: {"firm": "...", "prior": ..., "p": ..., "level": ..., "why": ...}
 """
@@ -18,44 +16,41 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent))
 OUT = Path(r"D:\harness office\research\jobtask-agent\out")
 
-# NOTE: Chinese text kept verbatim (LLM-facing prompt/protocol, part of the experiment record)
-SYS_G1 = """你是组织经济学判定器。给你一个岗位的任务集合（每条任务带：O*NET任务原文、
-GPT-4暴露等级E0/E1/E2、可编码性cod 0-2、语境嵌入ctx 0-1、功能模块）。
+SYS_G1 = """You are an organizational-economics judge. Given a job's task set (each task carries: O*NET task text,
+GPT-4 exposure level E0/E1/E2, codability cod 0-2, context embedding ctx 0-1, functional module).
 
-【准则 (a) 互补性再捆绑】AI 吸收可编码任务后，剩余的难吸收任务（判断/协调/问责/具身）
-与被吸收的高暴露任务重新捆绑。
-前因 = 该岗位任务集内**同时存在**：可被AI吸收的高暴露可编码任务 + 难以吸收的语境嵌入任务。
+[Criterion (a) Complementary Re-bundling] After AI absorbs codable tasks, the remaining hard-to-absorb tasks (judgment/coordination/accountability/embodied)
+are re-bundled with the absorbed high-exposure tasks.
+Antecedent = the job's task set **simultaneously contains**: AI-absorbable high-exposure codable tasks + hard-to-absorb context-embedded tasks.
 
-请判断该岗位是否具备这一前因，并预测其未来是否演化为"混合型新组合"（任务集出现
-高暴露×低暴露的新搭配）。输出一行 JSON：
-{"job": "<岗位id>", "prior": <1=具备前因 0=不具备>, "p": <0..1 出现混合型新组合的概率>,
- "level": "<低|中|高>", "why": "<≤25字，指认前因依据>"}
-只依据给定信息，strict JSON 数组输出。"""
+Judge whether this job has this antecedent, and predict whether it will evolve into a "hybrid new combination" (the task set shows
+a new pairing of high-exposure × low-exposure). Output one line of JSON:
+{"job": "<job id>", "prior": <1=antecedent present 0=absent>, "p": <0..1 probability of a hybrid new combination>,
+ "level": "<low|mid|high>", "why": "<≤25 chars, identifying the antecedent basis>"}
+Base only on the given information; strict JSON array output."""
 
-# NOTE: Chinese text kept verbatim (LLM-facing prompt/protocol, part of the experiment record)
-SYS_G2 = """你是组织经济学判定器。给你一个"任务团"（投影网络中紧密相连的一组任务，
-每条带暴露等级E、可编码性cod、知识层级L0-L3、功能模块）。
+SYS_G2 = """You are an organizational-economics judge. Given a "task cluster" (a group of tightly connected tasks in the projection network,
+each carrying exposure level E, codability cod, knowledge hierarchy L0-L3, functional module).
 
-【准则 (b) 层级解绑】知识获取成本下降后，问题解决跨度缩小，同一知识层级的可编码任务
-被拆进更狭窄、更均质的岗位。
-前因 = 团内任务**同层级、可编码、功能同质**（即是一块可被整齐切下的知识模块）。
+[Criterion (b) Hierarchical Unbundling] After knowledge acquisition cost falls, the problem-solving span narrows, and codable tasks at the same knowledge level
+are split into narrower, more homogeneous jobs.
+Antecedent = tasks in the cluster **at the same level, codable, functionally homogeneous** (i.e. a knowledge module that can be neatly carved out).
 
-请判断该团是否具备前因，并预测其未来是否**分裂**为若干更窄的新任务集。输出一行 JSON：
-{"seed": <int 种子任务id>, "prior": <1|0>, "p": <0..1 发生分裂的概率>,
- "level": "<低|中|高>", "why": "<≤25字>"}
-strict JSON 数组输出。"""
+Judge whether this cluster has the antecedent, and predict whether it will **split** into several narrower new task sets. Output one line of JSON:
+{"seed": <int seed task id>, "prior": <1|0>, "p": <0..1 probability of splitting>,
+ "level": "<low|mid|high>", "why": "<≤25 chars>"}
+strict JSON array output."""
 
-# NOTE: Chinese text kept verbatim (LLM-facing prompt/protocol, part of the experiment record)
-SYS_G3 = """你是组织经济学判定器。给你一个企业在该年的岗位结构摘要
-（岗位数、平均任务数、任务功能模块分布、跨企业模板采纳率、暴露结构）。
+SYS_G3 = """You are an organizational-economics judge. Given a summary of a firm's job structure for the year
+(number of jobs, average number of tasks, task functional-module distribution, cross-firm template adoption rate, exposure structure).
 
-【准则 (c) 模仿性模板扩散】不确定条件下组织复制看似成功的结构。
-前因 = 该企业结构中**已存在跨企业模板烙印**（其岗位组合与外部模板高度同构）。
+[Criterion (c) Mimetic Template Diffusion] Under uncertainty, organizations copy seemingly successful structures.
+Antecedent = the firm's structure **already has cross-firm template imprinting** (its job combinations are highly isomorphic with external templates).
 
-请判断该企业是否具备前因，并预测未来其新增岗位中模板采纳比例是否高于行业同期。
-输出一行 JSON：
-{"firm": "<企业代码>", "prior": <1|0>, "p": <0..1>, "level": "<低|中|高>", "why": "<≤25字>"}
-strict JSON 数组输出。"""
+Judge whether this firm has the antecedent, and predict whether the template adoption share in its future new postings will exceed the industry contemporaneous level.
+Output one line of JSON:
+{"firm": "<firm code>", "prior": <1|0>, "p": <0..1>, "level": "<low|mid|high>", "why": "<≤25 chars>"}
+strict JSON array output."""
 
 
 def prep_batches(rule: str, year: int = 2020, batch: int = 40) -> list[Path]:

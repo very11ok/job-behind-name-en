@@ -13,7 +13,6 @@ import pandas as pd
 BASE = Path(r"D:\harness office\research\jobtask-agent\out")
 REQ = ["id", "codability", "judgment", "coordination", "accountability",
        "embodied", "hierarchy", "module"]
-# NOTE: Chinese text kept verbatim (module enum values, matched against and written to the annotation data, must not change)
 MODS = {"生产执行", "质量检验", "研发技术", "工艺工程", "设备维护", "销售", "市场",
         "采购供应链", "物流仓储", "人力资源", "财务会计", "行政法务", "IT数据",
         "EHS安全", "客户服务", "综合管理", "其他"}

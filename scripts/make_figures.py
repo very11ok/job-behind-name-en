@@ -57,7 +57,6 @@ ax.legend(fontsize=9); ax.grid(alpha=.3, axis="y")
 
 # (4) Rule-family comparison
 ax = axes[1, 1]
-# NOTE: score keys kept verbatim (matched against the `score` column of rules_variants_*.csv; functional data)
 key = ["B4 = mod×sameE×coh", "B1 = mod×hom×cod×coh", "B5 = sameE×coh",
        "A2 = 1[E2×E0]×ctx_low", "A1 = gap×ctx_low"]
 llm = var.set_index("score").reindex(key)

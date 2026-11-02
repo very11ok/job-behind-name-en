@@ -21,7 +21,6 @@ OUT = Path(r"D:\harness office\research\jobtask-agent\out")
 
 YEARS = list(range(2016, 2027))
 
-# NOTE: Chinese data schema kept verbatim (source CSV column names)
 COLS = {
     "jobmatch": "job",
     "taskmatch": "task_list",
@@ -106,7 +105,6 @@ def build_task_dict(data: Path, out: Path) -> pd.DataFrame:
     tx["task"] = tx["task"].astype(int)
 
     idm = pd.read_csv(data / "idmapping.csv", encoding="utf-8")
-    # NOTE: Chinese data schema kept verbatim (source CSV column name in idmapping.csv)
     idm = idm.rename(columns={"元素": "task", "Title": "occ_title",
                               "gpt4_exposure": "E", "gpt4_automation": "auto",
                               "human_exposure_agg": "E_human", "human_labels": "E_label"})

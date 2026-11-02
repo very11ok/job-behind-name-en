@@ -17,44 +17,42 @@ JI = BASE / "out" / "judge_input"
 YEAR = 2020
 BATCH = 60
 
-# NOTE: Chinese text kept verbatim (LLM-facing prompt/protocol, part of the experiment record)
 PROTO = {
-    "g1": """【判定协议 · 准则(a) 互补性再捆绑 —— 前因判定】
-单元：一个岗位的任务集合（T=2020 快照）。
-前因定义：集合内同时包含——
-  ①「AI 可吸收的高暴露可编码任务」：暴露 E2、codability（可编码度）高，纯信息处理、规则明确；
-  ②「难被吸收的语境嵌入任务」：依赖判断(judge)/协调(coordinate)/问责(accountable)/具身情境，
-     codability 低、暴露 E0/E1。
-两类任务并存（①②都出现）才算前因成立 holds=1；只有一类或两类都弱则 holds=0。
-p 的含义：给定 2020 年信息，你估计该岗位在 2021-2023 年出现「新任务组合且为高-低暴露搭配」的概率。
+    "g1": """[Judgment Protocol · Criterion (a) Complementary Re-bundling — Antecedent Judgment]
+Unit: a job's task set (T=2020 snapshot).
+Antecedent definition: the set contains both —
+  ① "AI-absorbable high-exposure codable tasks": exposure E2, high codability, pure information processing, rules clear;
+  ② "hard-to-absorb context-embedded tasks": depend on judgment/coordination/accountability/embodied context,
+     low codability, exposure E0/E1.
+Both task types coexist (① and ② both present) for the antecedent to hold=1; only one type or both weak → holds=0.
+Meaning of p: given 2020 information, your estimate of the probability that this job will see "a new task combination with a high-low exposure pairing" in 2021-2023.
 """,  # noqa: RUF001
-    "g2": """【判定协议 · 准则(b) 层级解绑 —— 前因判定】
-单元：一个任务团（任务投影层上以某核心任务为中心的强邻域，T=2020）。
-前因定义：团内任务满足——
-  ① 同层级：hierarchy（L0例行执行/L1标准解题/L2跨职能协调/L3战略判断）高度集中；
-  ② 可编码为主：codability（可编码度）总体高，多数任务规则明确；
-  ③ 功能凝聚：模块集中，任务性质均质——整团可被"知识下沉"切进更窄的新岗位。
-三点基本满足 holds=1；层级混杂或大量语境嵌入任务则 holds=0。
-p 的含义：给定 2020 年信息，你估计该团在 2021-2023 年「分裂为 ≥2 个更窄岗位、分别承载团的一部分」的概率。
+    "g2": """[Judgment Protocol · Criterion (b) Hierarchical Unbundling — Antecedent Judgment]
+Unit: a task cluster (a strong neighborhood centered on a core task in the task projection layer, T=2020).
+Antecedent definition: tasks in the cluster satisfy —
+  ① Same level: hierarchy (L0 routine execution / L1 standard problem-solving / L2 cross-functional coordination / L3 strategic judgment) highly concentrated;
+  ② Predominantly codable: overall codability high, most tasks have clear rules;
+  ③ Functional coherence: modules concentrated, task nature homogeneous — the whole cluster can be "carved" into narrower new jobs by "knowledge sinking".
+All three points basically satisfied → holds=1; hierarchy mixed or many context-embedded tasks → holds=0.
+Meaning of p: given 2020 information, your estimate of the probability that this cluster will "split into ≥2 narrower jobs, each carrying part of the cluster" in 2021-2023.
 """,  # noqa: RUF001
-    "g3": """【判定协议 · 准则(c) 模仿性模板扩散 —— 前因判定】
-单元：一家企业 × 2020 的岗位结构。
-前因定义：该企业的岗位结构存在「模板残留」——表面相似度 surf_sim 明显高于结构相似度
-（struct_sim=与自身既往岗位结构相似，xfirm_sim=跨企业任务结构相似）：
-  即该企业岗位像流行模板，像的是【措辞】而不是【任务结构】——结构上并不真的同构，
-  说明职责措辞是从外部模板复制来的，任务结构尚未跟进。
-判断时对比三个数值：surf_sim 相对 struct_sim/xfirm_sim 的残差越大，模板残留越明显，越倾向 holds=1；
-三个数值接近（措辞相似可被结构相似解释）则 holds=0。辅以企业规模与功能多样性背景判断。
-p 的含义：给定 2020 年信息，你估计该企业 2021-2023 年「新增岗位中模板采纳占比高于全网中位数」的概率。
+    "g3": """[Judgment Protocol · Criterion (c) Mimetic Template Diffusion — Antecedent Judgment]
+Unit: a firm × 2020 job structure.
+Antecedent definition: the firm's job structure has "template residue" — surface similarity surf_sim is noticeably higher than structural similarity
+(struct_sim = similarity to own past job structure, xfirm_sim = cross-firm task structure similarity):
+  i.e. the firm's jobs resemble a popular template, but what they resemble is [wording] rather than [task structure] — structurally not truly isomorphic,
+  indicating that the job description wording was copied from an external template and the task structure has not yet caught up.
+When judging, compare the three values: the larger the residual of surf_sim relative to struct_sim/xfirm_sim, the more obvious the template residue, the more it favors holds=1;
+the three values close (wording similarity explainable by structural similarity) → holds=0. Supplement with firm size and functional diversity background.
+Meaning of p: given 2020 information, your estimate of the probability that the firm's "new postings with template adoption share above the network median" in 2021-2023.
 """,  # noqa: RUF001
 }
 
-# NOTE: Chinese text kept verbatim (LLM-facing prompt/protocol, part of the experiment record)
 OUT_FMT = """
-【输出】严格 JSON 数组，每个元素对应输入中一个对象块，顺序一致，不输出任何其他文字：
-[{"id":"<对象id>","holds":<0|1>,"p":<0..1>,"why":"<≤30字中文依据>"}]
-- id 照抄对象块第一行方括号里的 id。
-- p 给档位即可：0.05（几乎不可能）/0.1/0.2/0.3/0.5/0.7/0.9。
+[Output] Strict JSON array, each element corresponding to one object block in the input, in the same order, output no other text:
+[{"id":"<object id>","holds":<0|1>,"p":<0..1>,"why":"<≤30-char rationale>"}]
+- id: copy the id from the first-line brackets of the object block.
+- p: just give the bin: 0.05 (almost impossible) / 0.1 / 0.2 / 0.3 / 0.5 / 0.7 / 0.9.
 """
 
 
@@ -70,8 +68,6 @@ def _trim(s: str, n: int = 90) -> str:
     return s if len(s) <= n else s[: n - 1] + "…"
 
 
-# NOTE: Chinese text kept verbatim (rendered blocks are written into out/judge_input/*.txt and sent to the LLM,
-# part of the experiment record)
 def render_g1(texts) -> pd.DataFrame:
     df = pd.read_parquet(OBJ / f"g1_jobs_{YEAR}.parquet")
     blocks = []
@@ -83,16 +79,14 @@ def render_g1(texts) -> pd.DataFrame:
         mod = str(r["mod"]).split("|")
         lines = []
         for i, t in enumerate(ts):
-            e_lab = {"0": "E0低", "1": "E1中", "2": "E2高"}.get(e[i].strip(), e[i])
+            e_lab = {"0": "E0 low", "1": "E1 mid", "2": "E2 high"}.get(e[i].strip(), e[i])
             lines.append(f"  t{t} | {_trim(texts.get(t, '?'))} | {e_lab} | "
-                         f"可编码{cod[i]} 语境{ctx[i]} | {mod[i] if i < len(mod) else '?'}")
-        blocks.append(f"[id={r['job']} | 岗位任务集 {len(ts)} 任务 | 功能模块数 {r['n_mod']}]\n"
+                         f"cod={cod[i]} ctx={ctx[i]} | {mod[i] if i < len(mod) else '?'}")
+        blocks.append(f"[id={r['job']} | job task set {len(ts)} tasks | num functional modules {r['n_mod']}]\n"
                       + "\n".join(lines))
     return pd.DataFrame({"id": df["job"].astype(str), "block": blocks})
 
 
-# NOTE: Chinese text kept verbatim (rendered blocks are written into out/judge_input/*.txt and sent to the LLM,
-# part of the experiment record)
 def render_g2(texts) -> pd.DataFrame:
     df = pd.read_parquet(OBJ / f"g2_comm_{YEAR}.parquet")
     blocks = []
@@ -104,30 +98,28 @@ def render_g2(texts) -> pd.DataFrame:
         mod = str(r["mod"]).split("|")
         lines = []
         for i, t in enumerate(ts):
-            e_lab = {"0": "E0低", "1": "E1中", "2": "E2高"}.get(e[i].strip(), e[i])
+            e_lab = {"0": "E0 low", "1": "E1 mid", "2": "E2 high"}.get(e[i].strip(), e[i])
             lines.append(f"  t{t} | {_trim(texts.get(t, '?'))} | {e_lab} | "
-                         f"可编码{cod[i]} | {hier[i] if i < len(hier) else '?'} | "
+                         f"cod={cod[i]} | {hier[i] if i < len(hier) else '?'} | "
                          f"{mod[i] if i < len(mod) else '?'}")
-        blocks.append(f"[id={r['seed']} | 任务团 {len(ts)} 任务 | E2占比 {r['e2_share']:.2f} | "
-                      f"层级数 {r['hier_n']} | 模块数 {r['n_mod']}]\n" + "\n".join(lines))
+        blocks.append(f"[id={r['seed']} | task cluster {len(ts)} tasks | E2 share {r['e2_share']:.2f} | "
+                      f"num hierarchy levels {r['hier_n']} | num modules {r['n_mod']}]\n" + "\n".join(lines))
     return pd.DataFrame({"id": df["seed"].astype(str), "block": blocks})
 
 
-# NOTE: Chinese text kept verbatim (rendered blocks are written into out/judge_input/*.txt and sent to the LLM,
-# part of the experiment record)
 def render_g3(texts) -> pd.DataFrame:
     df = pd.read_parquet(OBJ / f"g3_firms_{YEAR}.parquet")
     blocks = []
     for _, r in df.iterrows():
         resid = float(r["surf_sim"]) - max(float(r["struct_sim"]), float(r["xfirm_sim"]))
         blocks.append(
-            f"[id={r['firm']} | 企业岗位结构 2020]\n"
-            f"  岗位数 {r['n_jobs']} | 平均任务集 {r['mean_size']:.1f} 任务 | 功能模块数 {r['n_mod']}"
-            f" | 高暴露E2任务占比 {r['e2_share']:.2f}\n"
-            f"  结构相似度(自身既往) struct_sim={r['struct_sim']:.3f}"
-            f" | 跨企业结构相似 xfirm_sim={r['xfirm_sim']:.3f}"
-            f" | 表面文本相似 surf_sim={r['surf_sim']:.3f}"
-            f" | 残差 surf-结构={resid:+.3f}")
+            f"[id={r['firm']} | firm job structure 2020]\n"
+            f"  num jobs {r['n_jobs']} | mean task set {r['mean_size']:.1f} tasks | num functional modules {r['n_mod']}"
+            f" | high-exposure E2 task share {r['e2_share']:.2f}\n"
+            f"  structural similarity (own past) struct_sim={r['struct_sim']:.3f}"
+            f" | cross-firm structural similarity xfirm_sim={r['xfirm_sim']:.3f}"
+            f" | surface text similarity surf_sim={r['surf_sim']:.3f}"
+            f" | residual surf-struct={resid:+.3f}")
     return pd.DataFrame({"id": df["firm"].astype(str), "block": blocks})
 
 

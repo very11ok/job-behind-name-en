@@ -50,7 +50,6 @@ def clash(df_train: pd.DataFrame, df_test: pd.DataFrame, target: str = "y",
     """train = T-1 (features from the T-1 network), test = T. Returns two rows of metrics."""
     tr, te = _prep(df_train), _prep(df_test)
     rows = []
-    # NOTE: Chinese data values kept verbatim (model labels written to the output DataFrame/CSV)
     for label, feats in [("纯图+持续", BASE_FEATS), ("+三守则语义", BASE_FEATS + RULE_FEATS)]:
         xf = tr[feats].fillna(0).to_numpy()
         m = LogisticRegression(C=C, max_iter=1000)

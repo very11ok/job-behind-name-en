@@ -31,7 +31,6 @@ def build_firm_year_jobs(force: bool = False) -> pd.DataFrame:
     f = OUT / "results" / "firm_year_jobs.parquet"
     if f.exists() and not force:
         return pd.read_parquet(f)
-    # NOTE: Chinese data schema kept verbatim (source CSV column names)
     cols = ["关联股票代码", "jobmatch", "taskmatch"]
     rows = []
     for y in range(2016, 2027):

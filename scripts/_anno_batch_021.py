@@ -5,8 +5,6 @@ csv_path = r"D:\harness office\research\jobtask-agent\out\anno_input\2019\batch_
 out_path = r"D:\harness office\research\jobtask-agent\out\anno_output\2019\batch_021.json"
 
 # (id, codability, judgment, coordination, accountability, embodied, hierarchy, module)
-# NOTE: Chinese module values kept verbatim (functional data; written to the annotation JSON and
-# validated against the MODS enum in qc_anno.py, which keeps the same Chinese values)
 ann = [
     (23144, 0, 1, 1, 0, 1, "L1", "生产执行"),   # Monitor stations/games, move dealers for staffing
     (21528, 0, 1, 1, 1, 0, "L2", "财务会计"),   # Represent clients before taxing authorities

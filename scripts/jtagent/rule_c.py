@@ -124,7 +124,6 @@ def run_rule_c(years: range = range(2017, 2026)) -> tuple[pd.DataFrame, pd.DataF
 
     def share(x, lo, hi):
         return float(((x >= lo) & (x < hi)).mean())
-    # NOTE: Chinese data schema kept verbatim (row labels written to rule_c_trend.csv)
     tr = ad.groupby("year").apply(
         lambda g: pd.Series({
             "n_new": len(g),

@@ -15,22 +15,19 @@ for (let i = 0; i < 34; i += 1) batches.push(`g1_batch_${String(i).padStart(3, "
 for (let i = 0; i < 26; i += 1) batches.push(`g2_batch_${String(i).padStart(3, "0")}`);
 for (let i = 0; i < 6; i += 1) batches.push(`g3_batch_${String(i).padStart(3, "0")}`);
 
-// NOTE: Chinese prompt kept verbatim (LLM-facing, part of the experiment record)
 const SYS =
-  "你是组织经济学预测 agent 的前因判定员，为岗位—任务网络上的三再捆绑准则做前因判定。" +
-  "你严格按批次文件头部的判定协议逐对象判定，不引入文件之外的信息，不编造 id。" +
-  "如果批次文件读不到、格式和协议描述不符、或任务自相矛盾，如实说明并返回 written=0，而不是猜一个结果。";
+  "You are the antecedent judge of an organizational-economics prediction agent, performing antecedent judgments for the three re-bundling criteria on a job—task network." +
+  "You judge object by object strictly according to the judgment protocol in the header of each batch file; do not bring in information outside the file, and do not fabricate ids." +
+  "If the batch file cannot be read, the format does not match the protocol description, or the tasks are self-contradictory, state so honestly and return written=0 rather than guessing a result.";
 
-// NOTE: Chinese prompt kept verbatim (LLM-facing, part of the experiment record)
-// (`retryNote` is prepended to the same LLM-facing message and is therefore also kept verbatim below)
 const askText = (b: string, retryNote: string) =>
-  `${retryNote}用 Read 工具读取批次文件 ${DIR}\\${b}.txt（头部是判定协议，正文是逐个对象块）。\n` +
-  `逐个对象按协议判定三个字段：\n` +
-  `- holds：前因是否成立，0 或 1；\n` +
-  `- p：该对象未来发生协议所述后果的概率档位，只取 0.05/0.1/0.2/0.3/0.5/0.7/0.9 之一；\n` +
-  `- why：≤30 字中文依据。\n` +
-  `判定完成后，用 Write 工具把严格 JSON 数组写入 ${OUTDIR}\\${b}.json（UTF-8）：每个对象一个元素，顺序与文件中的对象块一致，字段名为 id/holds/p/why，id 照抄对象块第一行方括号里 id= 后面的值。\n` +
-  `写完文件后，回复只含一个 JSON 对象：{"written": <实际写入的对象数>, "first": "<首个id>", "last": "<末个id>"}。不要在回复里输出判定数组全文，不要修改输入文件。`;
+  `${retryNote}Use the Read tool to read the batch file ${DIR}\\${b}.txt (the header is the judgment protocol, the body is per-object blocks).\n` +
+  `Judge the three fields for each object according to the protocol:\n` +
+  `- holds: whether the antecedent holds, 0 or 1;\n` +
+  `- p: the probability bin for the protocol-described consequence occurring for this object in the future, taking one of 0.05/0.1/0.2/0.3/0.5/0.7/0.9 only;\n` +
+  `- why: rationale in ≤30 characters.\n` +
+  `After judging, use the Write tool to write a strict JSON array to ${OUTDIR}\\${b}.json (UTF-8): one element per object, in the same order as the object blocks in the file, with field names id/holds/p/why, where id is copied verbatim from the value after id= in the first-line brackets of the object block.\n` +
+  `After writing the file, reply with only one JSON object: {"written": <number of objects actually written>, "first": "<first id>", "last": "<last id>"}. Do not output the full judgment array in your reply, and do not modify the input file.`;
 
 phase("LLM judges the three criteria's antecedents object by object");
 log(`${batches.length} batches in total (Criterion 1: 34, Criterion 2: 26, Criterion 3: 6), up to 60 objects per batch`);
@@ -38,8 +35,7 @@ let okCount = 0;
 const outcomes: { batch: string; written: number; status: string }[] = [];
 await Promise.all(
   batches.map(async (b) => {
-    // Subagent name template kept verbatim ("判定员" = judge); program identifier, not translated
-    const judge = agent(`判定员-${b}`, { system: SYS });
+    const judge = agent(`judge-${b}`, { system: SYS });
     try {
       const r = await judge.ask<BatchOutcome>(askText(b, ""));
       const status = r.written > 0 ? "ok" : "empty";
@@ -58,12 +54,10 @@ const failed = outcomes.filter((o) => o.status !== "ok");
 log(`${outcomes.length - failed.length} batches succeeded, ${failed.length} batches need a re-run`);
 const retried: string[] = [];
 for (const f of failed) {
-  // Subagent name template kept verbatim ("补标员" = backfill judge); program identifier, not translated
-  const judge = agent(`补标员-${f.batch}`, { system: SYS });
+  const judge = agent(`backfill-${f.batch}`, { system: SYS });
   try {
     const r = await judge.ask<BatchOutcome>(
-      // NOTE: Chinese retry note kept verbatim (LLM-facing, part of the experiment record)
-      askText(f.batch, `上一次判定没有成功落盘（状态 ${f.status}）。请重新完整执行一遍。\n`),
+      askText(f.batch, `The previous judgment was not successfully written to disk (status ${f.status}). Please re-run the complete process.\n`),
     );
     if (r.written > 0) {
       okCount += 1;

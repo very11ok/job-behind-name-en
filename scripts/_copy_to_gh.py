@@ -14,7 +14,6 @@ for src, dst in copies:
 
 readme = gh / 'README.md'
 text = readme.read_text(encoding='utf-8')
-# NOTE: the bullet texts below are human-facing README index lines (not code-matched data); translated into English
 add = [
     ('scripts/verify_g3_fix.py', 'Criterion 3 fix verification: objective scale antecedents (n_jobs/n_mod combinations) → template adoption'),
     ('docs/g3_fix_verify.md', 'Criterion 3 result: combined-antecedent lift ratios 2.98/3.26/3.06, all significant'),
